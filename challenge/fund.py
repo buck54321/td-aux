@@ -2,15 +2,18 @@
 Copyright (c) 2019, The Decred developers
 """
 import hashlib
+import sys
 
 from tinydecred.util.encode import ByteArray
 from tinydecred.crypto import opcode, crypto
 from tinydecred.pydecred.txscript import addData
-from tinydecred import config
+from tinydecred.pydecred import nets
 
-# Load the tinydecred configuration since we'll need to know what network was
-# specified at the command line.
-cfg = config.load()
+# --mainnet flag must be specified to use mainnet.
+isMainNet = "--mainnet" in sys.argv
+net = nets.mainnet if isMainNet else nets.testnet
+if not isMainNet:
+	print("Currently using testnet. To use mainnet, run the script with the --mainnet flag\n")
 
 # A hashing function.
 hash256 = lambda b: ByteArray(hashlib.sha256(bytes(b)).digest())
@@ -35,7 +38,7 @@ redeemScript += addData(doubleHash)
 redeemScript += opcode.OP_EQUAL
 
 # Create the address.
-p2shAddr = crypto.newAddressScriptHash(redeemScript, cfg.net)
+p2shAddr = crypto.newAddressScriptHash(redeemScript, net)
 
 # Print the address.
 print("Fund this challenge by sending Decred to", p2shAddr.string())

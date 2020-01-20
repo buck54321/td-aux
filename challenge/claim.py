@@ -2,13 +2,20 @@
 Copyright (c) 2019, The Decred developers
 """
 import hashlib
+import sys
 
+from tinydecred.pydecred import txscript, nets
+# Import the rest
 from tinydecred.util.encode import ByteArray
 from tinydecred.crypto import crypto, opcode
 from tinydecred.pydecred.dcrdata import DcrdataClient
-from tinydecred.pydecred import txscript
 from tinydecred.pydecred.wire import msgtx
-from tinydecred import config
+
+# --mainnet flag must be specified to use mainnet.
+isMainNet = "--mainnet" in sys.argv
+net = nets.mainnet if isMainNet else nets.testnet
+if not isMainNet:
+    print("Currently using testnet. To use mainnet, run the script with the --mainnet flag")
 
 # We'll use this function a few times.
 push = txscript.addData
@@ -19,20 +26,19 @@ hash256 = lambda b: ByteArray(hashlib.sha256(bytes(b)).digest())
 # Standard network fee rate.
 feeRate = 10 # DCR / byte
 
-# Load the tinydecred configuration so we'll need to know what network was
-# specified at the command line and which dcrdata address to use.
-cfg = config.load()
-
 # Make sure we can connect to dcrdata before proceeding.
-dcrdataAddr = cfg.get("networks", cfg.net.Name, "dcrdata")
-dcrdata = DcrdataClient(dcrdataAddr)
+url = "https://{}.dcrdata.org".format("explorer" if isMainNet else "testnet")
+dcrdata = DcrdataClient(url)
+# Well be using the dcrdata Insight API
+api = dcrdata.insight.api
 
 # Collect the challenge address.
 challengeAddr = input("What is the challenge address?\n")
 
 # Make sure that there is an unspent output going to this address. We'll use the
 # insight API exposed by dcrdata to find unspent outputs.
-outputs = dcrdata.insight.api.addr.utxo(challengeAddr)
+
+outputs = api.addr.utxo(challengeAddr)
 if not outputs:
     raise AssertionError("No open challenge for " + challengeAddr)
 utxo = outputs[0]
@@ -43,17 +49,23 @@ vout = int(utxo["vout"])
 reward = utxo["satoshis"]
 
 # Collect an address to send the funds to.
-recipient = input("\nEnter a {} address to receive the reward.\n".format(cfg.net.Name))
+
+recipient = input("\nEnter a {} address to receive the reward.\n".format(net.Name))
 while True:
     try:
-        rewardAddr = txscript.decodeAddress(recipient, cfg.net)
+        rewardAddr = txscript.decodeAddress(recipient, net)
         break
     except:
-        recipient = input("Invalid address. Enter an address for {}.\n".format(cfg.net.Name))
+        recipient = input("Invalid address. Enter an address for {}.\n".format(net.Name))
+
+# Reject identical challenge and reward addresses as user error.
+if challengeAddr == recipient:
+    raise AssertionError("challenge address cannot be the same as reward address")
 
 # If not on mainnet, the network will need to be specified correctly at the
 # command line, or else decodeAddress will fail.
-p2shAddr = txscript.decodeAddress(challengeAddr, cfg.net)
+p2shAddr = txscript.decodeAddress(challengeAddr, net)
+
 # Just a quick check that it's a P2SH address.
 if not isinstance(p2shAddr, crypto.AddressScriptHash):
     raise AssertionError("challenge address is not a valid pay-to-script-hash address")
@@ -97,6 +109,6 @@ while True:
     txout.value = netReward
 
     # Send the transaction, again using the dcrdata Insight API.
-    dcrdata.insight.api.tx.send.post({"rawtx": rewardTx.txHex()})
+    api.tx.send.post({"rawtx": rewardTx.txHex()})
     print(round(netReward/1e8, 8), "\nDCR reward claimed. Transaction ID:", rewardTx.id())
     break
