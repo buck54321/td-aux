@@ -4,10 +4,9 @@ Copyright (c) 2019, The Decred developers
 import hashlib
 import sys
 
-from tinydecred.util.encode import ByteArray
-from tinydecred.crypto import opcode, crypto
-from tinydecred.pydecred.txscript import addData
-from tinydecred.pydecred import nets
+from decred.util.encode import ByteArray
+from decred.crypto import opcode, crypto
+from decred.dcr import nets, txscript
 
 # --mainnet flag must be specified to use mainnet.
 isMainNet = "--mainnet" in sys.argv
@@ -32,7 +31,7 @@ doubleHash = hash256(answerHash)
 # stack.
 redeemScript = ByteArray(opcode.OP_SHA256)
 # Add the doubleHash to the stack.
-redeemScript += addData(doubleHash)
+redeemScript += txscript.addData(doubleHash)
 # The last opcode compares the two items on the stack, leaving a 1 on the stack
 # if they are equal.
 redeemScript += opcode.OP_EQUAL

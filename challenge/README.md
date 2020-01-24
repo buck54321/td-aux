@@ -8,7 +8,7 @@ Python 3 and the `decred` package.
 
 ### Create a challenge and answer
 
-The Decred challenge does not have a fixed format.
+The challenge does not have a fixed format.
 Anything that has a written answer can be a challenge:
 riddles, trivia, homework, word games, etc.
 

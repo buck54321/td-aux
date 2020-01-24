@@ -4,12 +4,12 @@ Copyright (c) 2019, The Decred developers
 import hashlib
 import sys
 
-from tinydecred.pydecred import txscript, nets
+from decred.dcr import txscript, nets
 # Import the rest
-from tinydecred.util.encode import ByteArray
-from tinydecred.crypto import crypto, opcode
-from tinydecred.pydecred.dcrdata import DcrdataClient
-from tinydecred.pydecred.wire import msgtx
+from decred.util.encode import ByteArray
+from decred.crypto import crypto, opcode
+from decred.dcr.dcrdata import DcrdataClient
+from decred.dcr.wire import msgtx
 
 # --mainnet flag must be specified to use mainnet.
 isMainNet = "--mainnet" in sys.argv
